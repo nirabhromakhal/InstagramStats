@@ -41,6 +41,7 @@ type InstagramVideosResponse struct {
 			} `json:"caption"`
 		} `json:"items"`
 	} `json:"data"`
+	PaginationToken string `json:"pagination_token"`
 }
 
 func NewInstagramService(db *gorm.DB, service *RapidApiService) *InstagramService {
@@ -131,11 +132,27 @@ func (service *InstagramService) getInstagramPostsReels(username string) (*Insta
 		return nil, err
 	}
 
-	var response InstagramVideosResponse
-	if err := json.Unmarshal(data, &response); err != nil {
+	var aggregatedResponse InstagramVideosResponse
+	if err := json.Unmarshal(data, &aggregatedResponse); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %v", err)
 	}
-	return &response, nil
+
+	// keep querying to get all posts
+	for aggregatedResponse.PaginationToken != "" {
+		queryParams["pagination_token"] = aggregatedResponse.PaginationToken
+		data, err = service.rapidApiService.GetData(baseUrl, queryParams)
+		if err != nil {
+			return nil, err
+		}
+		var response InstagramVideosResponse
+		if err := json.Unmarshal(data, &response); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %v", err)
+		}
+		aggregatedResponse.Data.Count += response.Data.Count
+		aggregatedResponse.Data.Items = append(aggregatedResponse.Data.Items, response.Data.Items...)
+		aggregatedResponse.PaginationToken = response.PaginationToken
+	}
+	return &aggregatedResponse, nil
 }
 
 func (service *InstagramService) ingestVideosIntoDatabase(channel *entity.Channel, resp *InstagramVideosResponse) {
