@@ -42,7 +42,7 @@ func main() {
 
 	// block until you are ready to shut down
 	select {
-	case <-time.After(3 * time.Minute):
+	case <-time.After(4 * time.Minute):
 	}
 
 	// when you're done, shut it down
