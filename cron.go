@@ -27,7 +27,7 @@ func main() {
 	// add a job to the scheduler
 	_, err = scheduler.NewJob(
 		gocron.DurationJob(
-			30*time.Second,
+			60*time.Second,
 		),
 		gocron.NewTask(
 			instagramService.UpdateAllInstagramChannels,
@@ -42,7 +42,7 @@ func main() {
 
 	// block until you are ready to shut down
 	select {
-	case <-time.After(time.Minute):
+	case <-time.After(3 * time.Minute):
 	}
 
 	// when you're done, shut it down
